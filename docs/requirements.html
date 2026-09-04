@@ -1,0 +1,701 @@
+<title>경매물건 관리 요구사항정의서</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F6F2E9;
+  --surface:#FFFFFF;
+  --ink:#221D15;
+  --navy:#1F3350;
+  --navy-2:#3C6089;
+  --gold:#A0702A;
+  --gold-soft:#EADFC4;
+  --line:#DED4BC;
+  --muted:#726A56;
+  --good:#3F6E4A;
+  --warn:#B0552B;
+  --shadow: 0 1px 2px rgba(34,29,21,.06), 0 8px 24px -12px rgba(34,29,21,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#151512;
+    --surface:#1D1C17;
+    --ink:#EDE7D8;
+    --navy:#A9C4E4;
+    --navy-2:#8FB2DC;
+    --gold:#E0B368;
+    --gold-soft:#3A311E;
+    --line:#39352A;
+    --muted:#AAA184;
+    --good:#7FBE8F;
+    --warn:#E0996B;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#151512;
+  --surface:#1D1C17;
+  --ink:#EDE7D8;
+  --navy:#A9C4E4;
+  --navy-2:#8FB2DC;
+  --gold:#E0B368;
+  --gold-soft:#3A311E;
+  --line:#39352A;
+  --muted:#AAA184;
+  --good:#7FBE8F;
+  --warn:#E0996B;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Noto Sans KR',ui-sans-serif,system-ui,sans-serif;
+  font-size:16px;
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold-soft);}
+a{color:var(--navy-2);text-decoration-thickness:1px;text-underline-offset:2px;}
+a:focus-visible, button:focus-visible, summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
+h1,h2,h3{font-family:'Noto Serif KR',serif;color:var(--navy);text-wrap:balance;font-weight:600;}
+
+.page{max-width:1180px;margin:0 auto;padding:0 28px 96px;}
+
+/* ---------- cover ---------- */
+.cover{padding:64px 0 36px;border-bottom:1px solid var(--line);}
+.cover-eyebrow{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:.72rem;letter-spacing:.16em;color:var(--gold);
+  text-transform:uppercase;margin-bottom:18px;
+}
+.cover h1{font-size:2.35rem;line-height:1.28;margin:0 0 28px;max-width:18ch;}
+.cover-meta{
+  display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));
+  gap:18px 28px;margin:0;padding-top:22px;border-top:1px solid var(--line);
+}
+.cover-meta > div{display:flex;flex-direction:column;gap:4px;}
+.cover-meta dt{
+  font-size:.72rem;color:var(--muted);letter-spacing:.06em;
+}
+.cover-meta dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;}
+
+/* ---------- callout ---------- */
+.brief{
+  margin:32px 0 8px;padding:22px 26px;background:var(--surface);
+  border:1px solid var(--line);border-left:3px solid var(--gold);
+  border-radius:4px;box-shadow:var(--shadow);
+}
+.brief h2{font-size:1.05rem;margin:0 0 10px;}
+.brief p{margin:0 0 14px;color:var(--muted);max-width:70ch;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{
+  font-size:.82rem;padding:6px 12px;border-radius:100px;
+  background:var(--gold-soft);color:var(--ink);text-decoration:none;
+  border:1px solid var(--line);white-space:nowrap;
+}
+.chip:hover{border-color:var(--gold);}
+
+/* ---------- layout ---------- */
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:56px;margin-top:40px;align-items:start;}
+.toc{position:sticky;top:24px;align-self:start;}
+.toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line);}
+.toc li{margin:0;}
+.toc a{
+  display:block;padding:7px 0 7px 16px;font-size:.86rem;color:var(--muted);
+  text-decoration:none;border-left:2px solid transparent;margin-left:-1px;
+}
+.toc a:hover{color:var(--navy-2);}
+.toc a.active{color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+
+.content section{padding-top:6px;margin-bottom:60px;scroll-margin-top:20px;}
+.content section + section{border-top:1px solid var(--line);padding-top:52px;}
+.sec-no{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;color:var(--gold);
+  font-size:.8rem;letter-spacing:.08em;display:block;margin-bottom:6px;
+}
+.content h2{font-size:1.5rem;margin:0 0 6px;}
+.content h3{font-size:1.12rem;margin:30px 0 10px;color:var(--ink);font-weight:700;}
+.lede{color:var(--muted);max-width:68ch;margin:10px 0 26px;}
+.content p{max-width:68ch;margin:0 0 16px;}
+.content ul, .content ol{max-width:68ch;padding-left:1.3em;margin:0 0 16px;}
+.content li{margin-bottom:6px;}
+
+/* ---------- requirement lists ---------- */
+.req-list{list-style:none;padding:0;max-width:74ch;margin:0 0 8px;display:flex;flex-direction:column;gap:10px;}
+.req-list li{
+  display:flex;gap:12px;align-items:baseline;margin:0;
+  padding:10px 0;border-bottom:1px dashed var(--line);
+}
+.req-id{
+  flex:0 0 auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:.72rem;color:var(--navy);background:var(--gold-soft);
+  padding:3px 7px;border-radius:3px;font-weight:500;white-space:nowrap;
+}
+.req-list p{margin:0;}
+
+/* ---------- glossary ---------- */
+.glossary{display:grid;grid-template-columns:1fr;gap:0;max-width:76ch;border-top:1px solid var(--line);}
+.glossary > div{
+  display:grid;grid-template-columns:148px 1fr;gap:20px;
+  padding:14px 0;border-bottom:1px solid var(--line);
+}
+.glossary dt{font-weight:700;color:var(--navy);}
+.glossary dd{margin:0;color:var(--ink);}
+@media (max-width:640px){.glossary > div{grid-template-columns:1fr;gap:4px;}}
+
+/* ---------- tables ---------- */
+.tbl-wrap{overflow-x:auto;margin:0 0 22px;border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);}
+table{border-collapse:collapse;width:100%;min-width:560px;background:var(--surface);}
+caption{
+  text-align:left;font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:.74rem;color:var(--muted);padding:10px 14px;letter-spacing:.04em;
+  border-bottom:1px solid var(--line);caption-side:top;
+}
+th,td{padding:10px 14px;text-align:left;font-size:.92rem;border-bottom:1px solid var(--line);vertical-align:top;}
+th{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:500;
+  font-size:.72rem;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;
+  background:color-mix(in srgb, var(--gold-soft) 55%, transparent);
+}
+tr:last-child td{border-bottom:none;}
+td:first-child, th:first-child{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.84rem;color:var(--navy);white-space:nowrap;}
+
+/* ---------- diagram ---------- */
+.pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:20px 0 26px;}
+.pbox{
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:12px 14px;font-size:.86rem;box-shadow:var(--shadow);max-width:180px;
+}
+.pbox b{display:block;color:var(--navy);font-size:.9rem;margin-bottom:2px;}
+.pbox span{color:var(--muted);font-size:.78rem;}
+.parrow{color:var(--gold);font-size:1.2rem;flex:0 0 auto;}
+.pipeline.secondary{margin-top:-6px;}
+.pipeline.secondary .pbox{border-style:dashed;}
+
+/* ---------- wireframe ---------- */
+.wireframe{
+  display:grid;gap:14px;margin:16px 0 28px;max-width:78ch;
+}
+.wf-screen{
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow);
+}
+.wf-title{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.72rem;
+  color:var(--muted);padding:9px 14px;border-bottom:1px solid var(--line);
+  letter-spacing:.04em;
+}
+.wf-body{display:grid;gap:1px;background:var(--line);}
+.wf-cell{background:var(--surface);padding:14px;font-size:.8rem;color:var(--muted);min-height:44px;display:flex;align-items:center;}
+.wf-cell b{color:var(--ink);font-weight:600;margin-right:6px;}
+.wf-main .wf-body{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;}
+.wf-map .wf-body{grid-template-columns:200px 1fr 260px;grid-template-rows:1fr;min-height:150px;}
+@media (max-width:640px){.wf-map .wf-body{grid-template-columns:1fr;}}
+
+/* ---------- badges ---------- */
+.badge{
+  display:inline-block;font-size:.72rem;padding:2px 9px;border-radius:100px;
+  font-weight:600;letter-spacing:.02em;
+}
+.badge.good{background:color-mix(in srgb, var(--good) 18%, transparent);color:var(--good);}
+.badge.warn{background:color-mix(in srgb, var(--warn) 18%, transparent);color:var(--warn);}
+
+.callout{
+  border:1px solid var(--line);border-left:3px solid var(--navy-2);
+  background:var(--surface);border-radius:4px;padding:16px 20px;
+  max-width:70ch;margin:18px 0 24px;font-size:.94rem;box-shadow:var(--shadow);
+}
+.callout p{margin:0;}
+.callout p + p{margin-top:8px;}
+
+footer.doc-footer{
+  border-top:1px solid var(--line);margin-top:40px;padding-top:24px;
+  color:var(--muted);font-size:.82rem;
+}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;gap:24px;}
+  .toc{position:static;border-bottom:1px solid var(--line);padding-bottom:14px;}
+  .toc ol{border-left:none;display:flex;flex-wrap:wrap;gap:4px 14px;}
+  .toc a{padding:4px 0;border-left:none;}
+  .toc a.active{border-left:none;text-decoration:underline;text-decoration-color:var(--gold);}
+  .cover h1{font-size:1.85rem;}
+  .cover-meta{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+
+<div class="page">
+
+  <header class="cover">
+    <div class="cover-eyebrow">Requirements Specification · 개인 프로젝트</div>
+    <h1>부동산 경매 관심물건<br>관리 시스템 요구사항정의서</h1>
+    <dl class="cover-meta">
+      <div><dt>문서 버전</dt><dd>v0.9 · 초안</dd></div>
+      <div><dt>작성일</dt><dd>2026-09-04</dd></div>
+      <div><dt>대상 사용자</dt><dd>개인(1인) 전용</dd></div>
+      <div><dt>상태</dt><dd>검토 대기</dd></div>
+    </dl>
+  </header>
+
+  <div class="brief">
+    <h2>전문가 검토로 보완한 지점</h2>
+    <p>원 요청은 목록 · 지도 · 마이옥션 연동 3가지였습니다. 경매 관심물건을 실제로 추적·검토·입찰까지 끌고 가려면 아래 항목이 추가로 필요하다고 판단해 이번 정의서에 포함했습니다.</p>
+    <div class="chip-row">
+      <a class="chip" href="#s2">경매 용어 정리</a>
+      <a class="chip" href="#s4-1">동기화 이력·변경 감지</a>
+      <a class="chip" href="#s4-4">권리분석 메모</a>
+      <a class="chip" href="#s4-5">규제·개발구역 레이어</a>
+      <a class="chip" href="#s4-6">알림(매각기일 임박 등)</a>
+      <a class="chip" href="#s4-7">임장 관리</a>
+      <a class="chip" href="#s4-8">입찰 준비·보증금 계산</a>
+      <a class="chip" href="#s4-10">백업/내보내기</a>
+      <a class="chip" href="#s10">리스크(약관·좌표·보안)</a>
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" aria-label="목차">
+      <ol>
+        <li><a href="#s1">1. 프로젝트 개요</a></li>
+        <li><a href="#s2">2. 용어 정의</a></li>
+        <li><a href="#s3">3. 시스템 구성 개요</a></li>
+        <li><a href="#s4">4. 기능 요구사항</a></li>
+        <li><a href="#s5">5. 비기능 요구사항</a></li>
+        <li><a href="#s6">6. 데이터 모델</a></li>
+        <li><a href="#s7">7. 화면 설계 개요</a></li>
+        <li><a href="#s8">8. 외부 연동 상세</a></li>
+        <li><a href="#s9">9. 기술 스택 제안</a></li>
+        <li><a href="#s10">10. 리스크 및 고려사항</a></li>
+        <li><a href="#s11">11. 향후 확장(Phase 2)</a></li>
+      </ol>
+    </nav>
+
+    <main class="content">
+
+      <section id="s1">
+        <span class="sec-no">01</span>
+        <h2>프로젝트 개요</h2>
+        <h3>목적</h3>
+        <p>마이옥션에 개인 계정으로 등록해 둔 <b>관심물건</b> 목록을 자동으로 수집하여, 별도 웹 화면에서 목록·지도 형태로 통합 관리한다. 물건별로 권리분석 메모, 임장 기록, 입찰 준비 상태를 개인이 직접 추적할 수 있도록 지원하는 것이 최종 목표다.</p>
+        <h3>배경</h3>
+        <p>마이옥션 자체 화면은 목록 위주라 여러 물건을 지역·가격대별로 공간적으로 비교하거나, 규제구역·개발호재를 지도 위에 겹쳐 보거나, 개인 메모와 입찰 전략을 함께 기록하기 어렵다. 이 프로젝트는 그 틈을 메우는 개인용 보조 도구다.</p>
+        <h3>범위</h3>
+        <ul>
+          <li>개인 단일 사용자 전용 웹앱. 로컬 PC 또는 개인 홈서버/NAS에 배포하는 것을 전제로 한다.</li>
+          <li>마이옥션 데이터는 <b>읽기 전용</b>으로만 수집한다. 마이옥션에 데이터를 쓰거나 입찰을 대행하지 않는다.</li>
+        </ul>
+        <h3>범위 제외 (Out of Scope)</h3>
+        <ul>
+          <li>실제 입찰 대리 제출 및 전자입찰 자동화</li>
+          <li>다중 사용자 계정, 공유·협업 기능</li>
+          <li>법률 자문 수준의 자동 권리분석 판단 (사용자 메모를 위한 보조 필드만 제공)</li>
+          <li>굿옥션·스피드옥션·지지옥션 등 타 경매정보 사이트 연동 (11장 향후 확장에서 재검토)</li>
+        </ul>
+      </section>
+
+      <section id="s2">
+        <span class="sec-no">02</span>
+        <h2>용어 정의</h2>
+        <p class="lede">이 문서 전반에서 사용하는 경매 용어를 정리한다. 화면 설계와 데이터 모델을 이해하는 데 필요한 최소한의 정의다.</p>
+        <div class="glossary">
+          <div><dt>감정가</dt><dd>감정평가사가 산정한 물건의 시장가치. 최초 최저매각가격 산정의 기준이 된다.</dd></div>
+          <div><dt>최저매각가격</dt><dd>해당 매각기일에 입찰 가능한 최저 금액. 유찰될 때마다 통상 20~30%씩 저감된다.</dd></div>
+          <div><dt>유찰</dt><dd>입찰자가 없거나 낙찰 요건을 충족하지 못해 매각이 성립되지 않은 것. 유찰 횟수가 많을수록 최저가가 낮아진다.</dd></div>
+          <div><dt>매각기일</dt><dd>법원이 지정한 입찰 진행일.</dd></div>
+          <div><dt>낙찰가율</dt><dd>실제 낙찰금액을 감정가로 나눈 비율. 지역·물건종류별 시세 판단 지표로 쓰인다.</dd></div>
+          <div><dt>대항력</dt><dd>임차인이 임대차 관계를 낙찰자에게 주장할 수 있는 권리. 말소기준권리보다 앞서 전입신고와 점유를 갖췄을 때 성립한다.</dd></div>
+          <div><dt>말소기준권리</dt><dd>등기부상 권리 중 경매로 소멸되는 기준이 되는 권리(보통 최선순위 저당권·가압류 등). 이보다 늦은 권리는 낙찰과 동시에 소멸한다.</dd></div>
+          <div><dt>인수권리</dt><dd>낙찰자가 낙찰 후에도 떠안아야 하는 권리. 대항력 있는 임차보증금, 유치권 등이 해당한다.</dd></div>
+          <div><dt>매수신청보증금</dt><dd>입찰 시 제공해야 하는 보증금. 통상 최저매각가격의 10%이며, 재매각 물건은 20~30%로 상향되는 경우가 있다.</dd></div>
+          <div><dt>특별매각조건</dt><dd>재매각, 농지취득자격증명 필요 등 해당 물건에 붙는 특수 입찰 조건.</dd></div>
+        </div>
+      </section>
+
+      <section id="s3">
+        <span class="sec-no">03</span>
+        <h2>시스템 구성 개요</h2>
+        <p class="lede">데이터가 흘러가는 경로를 두 갈래로 나눠서 본다. 하나는 마이옥션에서 물건 데이터를 가져오는 경로, 다른 하나는 공공데이터에서 규제·개발구역 정보를 가져오는 경로다. 두 경로 모두 지도 화면에서 합쳐진다.</p>
+        <div class="pipeline">
+          <div class="pbox"><b>마이옥션</b><span>로그인 세션</span></div>
+          <span class="parrow">→</span>
+          <div class="pbox"><b>스크래퍼</b><span>Playwright 기반</span></div>
+          <span class="parrow">→</span>
+          <div class="pbox"><b>스케줄러</b><span>자동 주기 · 수동 트리거</span></div>
+          <span class="parrow">→</span>
+          <div class="pbox"><b>정규화 · 지오코딩</b><span>주소 → 좌표</span></div>
+          <span class="parrow">→</span>
+          <div class="pbox"><b>DB</b><span>SQLite / PostgreSQL</span></div>
+          <span class="parrow">→</span>
+          <div class="pbox"><b>웹앱</b><span>목록 · 지도 · 상세</span></div>
+        </div>
+        <div class="pipeline secondary">
+          <div class="pbox"><b>공공데이터 API</b><span>VWorld · LURIS · 국토부</span></div>
+          <span class="parrow">→</span>
+          <div class="pbox"><b>구역 캐시</b><span>정기 갱신 · 로컬 저장</span></div>
+          <span class="parrow">→</span>
+          <div class="pbox"><b>지도 레이어</b><span>규제구역 · 개발단지</span></div>
+        </div>
+      </section>
+
+      <section id="s4">
+        <span class="sec-no">04</span>
+        <h2>기능 요구사항</h2>
+        <p class="lede">기능은 11개 모듈로 나눈다. 각 요구사항에는 참조용 ID를 붙였다.</p>
+
+        <h3 id="s4-1">4.1 데이터 수집 — 마이옥션 연동</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-DATA-01</span><p>마이옥션 계정(아이디/비밀번호)으로 로그인하여 관심물건 목록 페이지에 접근한다.</p></li>
+          <li><span class="req-id">FR-DATA-02</span><p>로그인 자격증명은 환경변수 또는 암호화된 로컬 저장소에 보관하며, 소스코드나 DB에 평문으로 남기지 않는다.</p></li>
+          <li><span class="req-id">FR-DATA-03</span><p>스케줄러는 설정된 주기(기본 1일 1회, 조정 가능)로 자동 수집을 실행한다.</p></li>
+          <li><span class="req-id">FR-DATA-04</span><p>사용자는 화면의 "지금 동기화" 버튼으로 수동 즉시 수집을 실행할 수 있다.</p></li>
+          <li><span class="req-id">FR-DATA-05</span><p>물건별 핵심 필드(사건번호, 소재지, 물건종류, 감정가, 최저매각가격, 매각기일, 진행상태, 유찰횟수, 면적 등)를 파싱해 저장한다.</p></li>
+          <li><span class="req-id">FR-DATA-06</span><p>수집 결과(성공/실패, 신규·변경·삭제 건수, 소요시간, 오류 메시지)를 동기화 이력으로 기록하고 조회할 수 있다.</p></li>
+          <li><span class="req-id">FR-DATA-07</span><p>이전 수집 결과와 비교해 신규 등록, 상태 변경(진행중→낙찰/취하 등), 가격 변경, 마이옥션에서 관심 해제된 물건을 감지한다.</p></li>
+          <li><span class="req-id">FR-DATA-08</span><p>로그인 실패나 페이지 구조 변경으로 수집이 실패하면 오류를 기록하고 알림으로 통지한다.</p></li>
+          <li><span class="req-id">FR-DATA-09</span><p>수집 주기, 재시도 횟수, 타임아웃은 설정 화면에서 조정할 수 있다.</p></li>
+        </ul>
+
+        <h3>4.2 메인 — 관심물건 목록</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-MAIN-01</span><p>메인 화면은 관심등록된 전체 물건을 카드 또는 테이블 목록으로 표시한다.</p></li>
+          <li><span class="req-id">FR-MAIN-02</span><p>항목별로 사건번호, 소재지(간략), 물건종류, 감정가, 최저매각가격, 매각기일(D-day 포함), 진행상태, 유찰횟수, 우선순위 태그를 표시한다.</p></li>
+          <li><span class="req-id">FR-MAIN-03</span><p>매각기일 임박순, 최저가율 낮은순, 감정가순, 관심등록일순으로 정렬할 수 있다.</p></li>
+          <li><span class="req-id">FR-MAIN-04</span><p>지역, 물건종류, 가격대, 진행상태, 우선순위 태그로 필터링할 수 있다.</p></li>
+          <li><span class="req-id">FR-MAIN-05</span><p>항목 클릭 시 상세 화면으로 이동해 전체 정보를 확인할 수 있다.</p></li>
+          <li><span class="req-id">FR-MAIN-06</span><p>물건별로 우선순위 태그(관심/검토중/입찰예정/포기/낙찰실패)와 자유 메모를 등록할 수 있다.</p></li>
+          <li><span class="req-id">FR-MAIN-07</span><p>매각기일이 7일 이내(조정 가능)로 임박한 물건은 시각적으로 강조한다.</p></li>
+          <li><span class="req-id">FR-MAIN-08</span><p>목록 상단에 요약 통계(전체 물건 수, 이번 주 매각 예정 수, 신규 수집 수)를 표시한다.</p></li>
+        </ul>
+
+        <h3>4.3 지도 뷰</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-MAP-01</span><p>지도 메뉴 진입 시 관심등록된 모든 물건의 위치에 핀을 표시한다.</p></li>
+          <li><span class="req-id">FR-MAP-02</span><p>각 핀에는 최저매각가격(또는 감정가)이 라벨로 함께 표시된다.</p></li>
+          <li><span class="req-id">FR-MAP-03</span><p>핀은 진행상태(진행중/유찰/낙찰/취하) 또는 유찰횟수에 따라 색상·아이콘을 달리한다.</p></li>
+          <li><span class="req-id">FR-MAP-04</span><p>핀 클릭 시 화면 우측(모바일은 하단) 사이드바에 해당 물건의 상세 정보가 표시된다.</p></li>
+          <li><span class="req-id">FR-MAP-05</span><p>다수 물건이 근접하면 클러스터링하여 표시하고, 확대 시 개별 핀으로 분리한다.</p></li>
+          <li><span class="req-id">FR-MAP-06</span><p>규제구역·개발단지 레이어를 지도 위에서 켜고 끌 수 있다. (4.5 참조)</p></li>
+          <li><span class="req-id">FR-MAP-07</span><p>목록과 동일한 필터(지역/종류/가격대/상태)를 지도에도 적용할 수 있다.</p></li>
+          <li><span class="req-id">FR-MAP-08</span><p>지오코딩에 실패한 물건은 별도 목록으로 표시해 주소를 수동 보정할 수 있게 한다.</p></li>
+        </ul>
+
+        <h3 id="s4-4">4.4 물건 상세 사이드바</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-DETAIL-01</span><p>사건번호, 법원, 소재지(지번/도로명), 물건종류, 면적(대지/건물/전용), 층·방향을 표시한다.</p></li>
+          <li><span class="req-id">FR-DETAIL-02</span><p>감정가, 최저매각가격, 유찰횟수, 매각기일, 매수신청보증금(최저가의 10% 자동계산)을 표시한다.</p></li>
+          <li><span class="req-id">FR-DETAIL-03</span><p>임차인 현황 요약과 인수·소멸 권리 메모를 사용자가 직접 입력·저장할 수 있다. 자동 법률 판단은 제공하지 않으며 어디까지나 참고용 메모다.</p></li>
+          <li><span class="req-id">FR-DETAIL-04</span><p>마이옥션 원본 상세페이지와 법원경매정보(대법원) 링크를 제공한다.</p></li>
+          <li><span class="req-id">FR-DETAIL-05</span><p>사용자 메모, 우선순위 태그, 목표 입찰가를 입력·수정할 수 있다.</p></li>
+          <li><span class="req-id">FR-DETAIL-06</span><p>해당 물건의 임장 기록(방문일, 메모, 사진)을 추가·조회할 수 있다.</p></li>
+          <li><span class="req-id">FR-DETAIL-07</span><p>해당 위치가 어떤 규제구역·개발단지에 해당하는지 요약 배지로 표시한다.</p></li>
+          <li><span class="req-id">FR-DETAIL-08</span><p>가격·상태 변동 이력을 타임라인으로 표시한다.</p></li>
+        </ul>
+
+        <h3 id="s4-5">4.5 규제 · 개발구역 지도 레이어</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-ZONE-01</span><p>규제구역 레이어를 개별 on/off 토글로 제공한다 — 투기과열지구, 조정대상지역, 토지거래허가구역, 개발제한구역(그린벨트), 정비구역(재개발·재건축·재정비촉진지구).</p></li>
+          <li><span class="req-id">FR-ZONE-02</span><p>개발 관련 레이어를 제공한다 — 택지개발지구·도시개발구역, 신도시 예정지(3기 신도시 등), 산업단지·경제자유구역, 역세권 개발(GTX·신설역) 반경.</p></li>
+          <li><span class="req-id">FR-ZONE-03</span><p>구역 데이터는 공공데이터 API(국토교통부, VWorld, 토지이용규제정보서비스 등)로 주기 갱신하여 로컬에 캐시한다.</p></li>
+          <li><span class="req-id">FR-ZONE-04</span><p>물건 상세 화면에서 해당 위치가 속한 규제·개발구역을 자동 판정(point-in-polygon)하여 배지로 표시한다.</p></li>
+          <li><span class="req-id">FR-ZONE-05</span><p>레이어 데이터의 출처와 갱신일자를 지도 범례에 표시한다.</p></li>
+        </ul>
+
+        <h3 id="s4-6">4.6 알림</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-ALERT-01</span><p>매각기일이 N일 이내(기본 7일, 조정 가능)로 임박한 물건이 있으면 알림을 표시한다.</p></li>
+          <li><span class="req-id">FR-ALERT-02</span><p>가격(감정가/최저가) 또는 진행상태가 변경된 물건이 있으면 알림을 표시한다.</p></li>
+          <li><span class="req-id">FR-ALERT-03</span><p>신규 관심등록 물건이 수집되면 알림을 표시한다.</p></li>
+          <li><span class="req-id">FR-ALERT-04</span><p>스케줄러 실행 실패(로그인 실패 등) 시 알림을 표시한다.</p></li>
+          <li><span class="req-id">FR-ALERT-05</span><p>기본 채널은 웹 화면 내 알림함이며, 이메일 알림은 선택 기능으로 둔다.</p></li>
+        </ul>
+
+        <h3 id="s4-7">4.7 임장 관리</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-VISIT-01</span><p>물건별로 임장 계획(예정일, 준비사항 체크리스트)을 등록할 수 있다.</p></li>
+          <li><span class="req-id">FR-VISIT-02</span><p>임장 완료 후 방문일, 현장 메모, 사진을 기록할 수 있다.</p></li>
+          <li><span class="req-id">FR-VISIT-03</span><p>기본 체크리스트(관리사무소 확인, 등기부등본 재확인, 실거주자 확인, 주차·일조·소음 확인 등)를 제공하고 항목을 추가·수정할 수 있다.</p></li>
+        </ul>
+
+        <h3 id="s4-8">4.8 입찰 관리</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-BID-01</span><p>물건별 목표 입찰가와 입찰 예정일을 기록할 수 있다.</p></li>
+          <li><span class="req-id">FR-BID-02</span><p>매수신청보증금(최저매각가격의 10%, 재매각 등 특별조건 반영)을 자동 계산해 표시한다.</p></li>
+          <li><span class="req-id">FR-BID-03</span><p>같은 지역·유형 물건의 과거 낙찰가율 통계(수집 데이터 기반)를 참고 지표로 제공한다.</p></li>
+          <li><span class="req-id">FR-BID-04</span><p>입찰 결과(낙찰/패찰/유찰)를 기록해 이후 통계에 반영한다.</p></li>
+        </ul>
+
+        <h3>4.9 통계 · 필터 · 검색</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-STAT-01</span><p>지역별·물건종류별 관심물건 분포를 요약 통계로 제공한다.</p></li>
+          <li><span class="req-id">FR-STAT-02</span><p>평균 감정가 대비 최저가율, 평균 유찰횟수 등 요약 지표를 제공한다.</p></li>
+          <li><span class="req-id">FR-STAT-03</span><p>주소·사건번호 키워드 검색을 지원한다.</p></li>
+        </ul>
+
+        <h3 id="s4-10">4.10 데이터 백업 · 내보내기</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-EXPORT-01</span><p>전체 관심물건 목록을 Excel(CSV) 형식으로 내보낼 수 있다.</p></li>
+          <li><span class="req-id">FR-EXPORT-02</span><p>DB 전체를 정기적으로 로컬 백업 파일로 저장할 수 있다.</p></li>
+        </ul>
+
+        <h3>4.11 계정 · 보안</h3>
+        <ul class="req-list">
+          <li><span class="req-id">FR-SEC-01</span><p>웹앱 자체도 최소한의 로그인(단일 사용자 비밀번호 또는 기본 인증)으로 보호한다. 외부 네트워크에 노출할 경우 필수.</p></li>
+          <li><span class="req-id">FR-SEC-02</span><p>마이옥션 자격증명은 애플리케이션 DB와 분리된 비밀 저장소(.env, OS 키체인, 또는 암호화 필드)에 보관한다.</p></li>
+          <li><span class="req-id">FR-SEC-03</span><p>로그 파일과 화면 어디에도 비밀번호 평문이 노출되지 않는다.</p></li>
+        </ul>
+      </section>
+
+      <section id="s5">
+        <span class="sec-no">05</span>
+        <h2>비기능 요구사항</h2>
+        <div class="tbl-wrap">
+          <table>
+            <caption>NFR — Non-Functional Requirements</caption>
+            <thead><tr><th>ID</th><th>구분</th><th>내용</th></tr></thead>
+            <tbody>
+              <tr><td>NFR-01</td><td>성능</td><td>물건 수 최대 500건 내외 기준, 목록·지도 로딩 3초 이내.</td></tr>
+              <tr><td>NFR-02</td><td>가용성</td><td>개인 로컬/홈서버 운영 전제로 24/7 고가용성은 요구하지 않는다. 단 스케줄러는 서버가 켜져 있는 동안 안정적으로 동작해야 한다.</td></tr>
+              <tr><td>NFR-03</td><td>이식성</td><td>Docker로 패키징해 NAS·클라우드 VM 등 다른 환경으로 이전이 쉬워야 한다.</td></tr>
+              <tr><td>NFR-04</td><td>유지보수성</td><td>마이옥션 HTML 구조 변경에 대비해 스크래핑 셀렉터를 별도 설정 파일로 분리한다.</td></tr>
+              <tr><td>NFR-05</td><td>데이터 정확성</td><td>지오코딩 실패율을 모니터링하고 수동 보정 UI를 제공한다.</td></tr>
+              <tr><td>NFR-06</td><td>법적 고려</td><td>본인 계정으로 본인이 등록한 관심물건만 수집하며 대량·타인 데이터 크롤링은 하지 않는다. 마이옥션 약관상 자동화 접근 제한 여부를 사전 확인한다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="s6">
+        <span class="sec-no">06</span>
+        <h2>데이터 모델</h2>
+        <p class="lede">6개 엔티티로 구성한다. Property가 중심이고, 나머지는 개인 관리·이력 데이터다.</p>
+
+        <div class="tbl-wrap">
+          <table>
+            <caption>Property — 물건</caption>
+            <thead><tr><th>필드</th><th>설명</th><th>예시 / 비고</th></tr></thead>
+            <tbody>
+              <tr><td>case_no</td><td>사건번호</td><td>2025타경12345</td></tr>
+              <tr><td>court</td><td>관할 법원</td><td>수원지방법원</td></tr>
+              <tr><td>address_road / address_jibun</td><td>도로명 / 지번 주소</td><td>지오코딩 입력값</td></tr>
+              <tr><td>lat / lng</td><td>좌표</td><td>지오코딩 결과</td></tr>
+              <tr><td>property_type</td><td>물건종류</td><td>아파트/다세대/단독/토지/상가/오피스텔 등</td></tr>
+              <tr><td>appraisal_value</td><td>감정가</td><td>원 단위</td></tr>
+              <tr><td>min_sale_price</td><td>최저매각가격</td><td>원 단위</td></tr>
+              <tr><td>failed_count</td><td>유찰횟수</td><td>정수</td></tr>
+              <tr><td>sale_date</td><td>매각기일</td><td>날짜</td></tr>
+              <tr><td>status</td><td>진행상태</td><td>진행중/변경/취하/낙찰/기각</td></tr>
+              <tr><td>land_area / building_area / exclusive_area</td><td>면적</td><td>대지/건물/전용, ㎡</td></tr>
+              <tr><td>floor_info</td><td>층수 · 방향</td><td>예: 7/15층, 남향</td></tr>
+              <tr><td>tenant_summary</td><td>임차인 현황 메모</td><td>사용자 입력</td></tr>
+              <tr><td>rights_note</td><td>권리분석 메모</td><td>사용자 입력, 말소기준/인수권리 등</td></tr>
+              <tr><td>myauction_url</td><td>원본 링크</td><td>마이옥션 상세페이지</td></tr>
+              <tr><td>registered_at</td><td>마이옥션 관심등록일</td><td>-</td></tr>
+              <tr><td>collected_at / updated_at</td><td>최초 수집일 / 갱신일</td><td>시스템 기록</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tbl-wrap">
+          <table>
+            <caption>UserMeta — 개인 관리 정보 (property_id FK)</caption>
+            <thead><tr><th>필드</th><th>설명</th><th>예시 / 비고</th></tr></thead>
+            <tbody>
+              <tr><td>priority_tag</td><td>우선순위 태그</td><td>관심/검토중/입찰예정/포기/완료</td></tr>
+              <tr><td>memo</td><td>자유 메모</td><td>-</td></tr>
+              <tr><td>target_bid_price</td><td>목표 입찰가</td><td>-</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tbl-wrap">
+          <table>
+            <caption>VisitLog — 임장 기록 (property_id FK)</caption>
+            <thead><tr><th>필드</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td>visit_date</td><td>방문일</td></tr>
+              <tr><td>note</td><td>현장 메모</td></tr>
+              <tr><td>photos[]</td><td>첨부 사진</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tbl-wrap">
+          <table>
+            <caption>BidRecord — 입찰 기록 (property_id FK)</caption>
+            <thead><tr><th>필드</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td>bid_date</td><td>입찰일</td></tr>
+              <tr><td>bid_price</td><td>실제 입찰가</td></tr>
+              <tr><td>result</td><td>낙찰 / 패찰 / 유찰</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tbl-wrap">
+          <table>
+            <caption>SyncLog — 동기화 이력</caption>
+            <thead><tr><th>필드</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td>run_at</td><td>실행 시각</td></tr>
+              <tr><td>trigger_type</td><td>자동 / 수동</td></tr>
+              <tr><td>status</td><td>성공 / 실패</td></tr>
+              <tr><td>new_count / updated_count / removed_count</td><td>신규 · 변경 · 삭제 건수</td></tr>
+              <tr><td>error_message</td><td>실패 시 오류 내용</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tbl-wrap">
+          <table>
+            <caption>ZoneCache — 규제 · 개발구역 캐시</caption>
+            <thead><tr><th>필드</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td>zone_type</td><td>구역 종류 (투기과열지구, 그린벨트 등)</td></tr>
+              <tr><td>name</td><td>구역명</td></tr>
+              <tr><td>geometry</td><td>GeoJSON 폴리곤</td></tr>
+              <tr><td>source / updated_at</td><td>데이터 출처 및 갱신일</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="s7">
+        <span class="sec-no">07</span>
+        <h2>화면 설계 개요</h2>
+        <p class="lede">본격적인 화면 설계 전 단계의 뼈대다. 메인·지도·설정 3화면을 기준으로 배치를 정의한다.</p>
+
+        <div class="wireframe">
+          <div class="wf-screen wf-main">
+            <div class="wf-title">메인 — 관심물건 목록</div>
+            <div class="wf-body">
+              <div class="wf-cell"><b>상단</b>요약 통계 바 (전체 건수 · 이번 주 매각 예정 · 신규 수집)</div>
+              <div class="wf-cell"><b>필터</b>지역 · 종류 · 가격대 · 상태 · 우선순위</div>
+              <div class="wf-cell"><b>목록</b>카드/테이블 토글, 매각기일 임박 항목 강조 표시</div>
+            </div>
+          </div>
+
+          <div class="wf-screen wf-map">
+            <div class="wf-title">지도</div>
+            <div class="wf-body">
+              <div class="wf-cell"><b>좌측</b>레이어 패널(규제구역/개발단지) + 필터</div>
+              <div class="wf-cell"><b>중앙</b>지도 · 가격 라벨 핀 · 클러스터링</div>
+              <div class="wf-cell"><b>우측</b>선택 물건 상세 사이드바(슬라이드인)</div>
+            </div>
+          </div>
+
+          <div class="wf-screen wf-main">
+            <div class="wf-title">설정</div>
+            <div class="wf-body">
+              <div class="wf-cell"><b>계정</b>마이옥션 아이디/비밀번호, 웹앱 로그인 비밀번호</div>
+              <div class="wf-cell"><b>스케줄러</b>수집 주기, 지금 동기화 버튼, 동기화 이력</div>
+              <div class="wf-cell"><b>알림 · 백업</b>매각기일 임박 기준일, 이메일 알림 여부, 백업/내보내기</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="s8">
+        <span class="sec-no">08</span>
+        <h2>외부 연동 상세</h2>
+
+        <h3>마이옥션</h3>
+        <p>공식 API가 없다고 가정하고, Playwright 기반 헤드리스 브라우저로 로그인 후 관심물건 목록 페이지를 파싱한다. 사이트 구조 변경 리스크가 있으므로 CSS 셀렉터는 코드가 아닌 설정 파일로 분리해 관리한다.</p>
+
+        <h3>지도 · 지오코딩</h3>
+        <p>한국 주소 체계와 지오코딩 정확도를 고려해 <b>카카오맵 API</b>를 우선 검토한다(무료 티어로 지도 표시와 주소→좌표 변환을 함께 처리 가능). 대안으로 네이버 지도 API도 검토할 수 있다.</p>
+
+        <h3>공공데이터 (규제 · 개발구역)</h3>
+        <div class="tbl-wrap">
+          <table>
+            <caption>후보 데이터 소스</caption>
+            <thead><tr><th>소스</th><th>용도</th><th>비고</th></tr></thead>
+            <tbody>
+              <tr><td>VWorld (브이월드)</td><td>도시계획 · 개발구역 오픈API</td><td>국토교통부 공간정보 오픈플랫폼</td></tr>
+              <tr><td>LURIS (토지이용규제정보서비스)</td><td>용도지역 · 지구 · 구역 조회</td><td>eum.go.kr</td></tr>
+              <tr><td>공공데이터포털</td><td>투기과열지구 · 조정대상지역 지정 현황</td><td>국토부 고시 기반, 수시 개정 — 반기별 수동 확인 권장</td></tr>
+              <tr><td>국토교통부 실거래가 공개시스템</td><td>낙찰가율 참고 통계</td><td>선택 기능(FR-BID-03)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="s9">
+        <span class="sec-no">09</span>
+        <h2>기술 스택 제안</h2>
+        <div class="tbl-wrap">
+          <table>
+            <caption>구성 제안</caption>
+            <thead><tr><th>영역</th><th>제안</th><th>비고</th></tr></thead>
+            <tbody>
+              <tr><td>프론트엔드</td><td>Next.js (React) + TypeScript</td><td>지도는 카카오맵 SDK</td></tr>
+              <tr><td>백엔드 / API</td><td>Next.js API Routes 또는 별도 Node.js(Express)</td><td>단일 사용자용, 과설계 지양</td></tr>
+              <tr><td>스크래핑</td><td>Playwright</td><td>헤드리스 로그인 + 파싱</td></tr>
+              <tr><td>스케줄러</td><td>node-cron + 수동 트리거 API</td><td>서버 상시 구동 전제</td></tr>
+              <tr><td>DB</td><td>SQLite</td><td>단일 사용자, 파일 백업 용이. 확장 시 PostgreSQL</td></tr>
+              <tr><td>배포</td><td>Docker Compose (앱 + 스케줄러 워커)</td><td>홈서버/NAS 또는 개인 VPS</td></tr>
+              <tr><td>인증</td><td>세션 기반 로그인</td><td>웹앱 자체 보호용, FR-SEC-01</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="s10">
+        <span class="sec-no">10</span>
+        <h2>리스크 및 고려사항</h2>
+        <div class="callout">
+          <p><span class="badge warn">약관</span> 마이옥션 이용약관상 자동화 접근·스크래핑이 제한될 수 있다. 본인 계정, 개인적·비상업적 사용 목적임을 전제로 하고 과도한 요청 빈도(예: 1일 수 회 이상)는 피한다.</p>
+        </div>
+        <div class="callout">
+          <p><span class="badge warn">구조 변경</span> 마이옥션 UI 개편 시 스크래퍼가 깨질 수 있다. 실패 알림(FR-ALERT-04)과 셀렉터 설정 분리(NFR-04)로 대응한다.</p>
+        </div>
+        <div class="callout">
+          <p><span class="badge warn">좌표 정확도</span> 경매 물건 주소는 지번주소·구주소인 경우가 많아 지오코딩 실패율이 상대적으로 높을 수 있다. 수동 보정 UI(FR-MAP-08)가 필요하다.</p>
+        </div>
+        <div class="callout">
+          <p><span class="badge warn">데이터 최신성</span> 투기과열지구 등은 정부 고시로 수시 변경된다. 자동 API가 없는 항목은 반기·분기별 수동 갱신 프로세스를 둔다.</p>
+        </div>
+        <div class="callout">
+          <p><span class="badge warn">계정 보안</span> 마이옥션 자격증명과 웹앱이 같은 개인 서버에 있으므로, 외부 노출 시 보안 사고 리스크가 있다. 방화벽·VPN 또는 리버스프록시+인증을 권장한다.</p>
+        </div>
+      </section>
+
+      <section id="s11">
+        <span class="sec-no">11</span>
+        <h2>향후 확장 (Phase 2)</h2>
+        <ul>
+          <li>굿옥션 · 스피드옥션 · 지지옥션 등 타 경매정보 사이트 동시 연동 및 물건 매칭·중복 제거</li>
+          <li>실거래가 데이터를 활용한 낙찰 예상가 자동 추정 모델</li>
+          <li>등기부등본 자동 열람 연동(유료 API)과 권리분석 반자동화</li>
+          <li>모바일 PWA 푸시 알림</li>
+          <li>다중 사용자 · 공유 뷰 (가족과 공유 등)</li>
+        </ul>
+      </section>
+
+      <footer class="doc-footer">
+        본 문서는 초안(v0.9)이며, 실제 구현 전 화면 목업과 API 명세 등 상세 설계 문서로 이어질 수 있다.
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  if(!sections.length) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var id = '#' + entry.target.id;
+      var link = links.find(function(a){ return a.getAttribute('href') === id; });
+      if(!link) return;
+      if(entry.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  sections.forEach(function(s){ io.observe(s); });
+})();
+</script>
