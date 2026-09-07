@@ -53,6 +53,7 @@ async function main() {
       building_area: rec.building_area,
       land_area: rec.land_area,
       myauction_url: rec.myauction_url,
+      site_tags: rec.regulation_tags_raw,
       updated_at: new Date().toISOString(),
     };
 
