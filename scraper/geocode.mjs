@@ -1,12 +1,12 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import "./lib/env.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { getServiceClient } from "./lib/supabase.mjs";
 
-const KAKAO_KEY = requireEnv("KAKAO_REST_API_KEY");
-
-async function geocode(address) {
+async function geocode(address, kakaoKey) {
   const url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`;
-  const res = await fetch(url, { headers: { Authorization: `KakaoAK ${KAKAO_KEY}` } });
+  const res = await fetch(url, { headers: { Authorization: `KakaoAK ${kakaoKey}` } });
   if (!res.ok) throw new Error(`Kakao geocoding failed: ${res.status} ${await res.text()}`);
   const body = await res.json();
   const doc = body.documents?.[0];
@@ -21,8 +21,8 @@ function simplify(address) {
   return address.replace(/\s*\S*\d+동\s*/g, " ").replace(/\d+층\d*호?$/, "").trim();
 }
 
-async function main() {
-  const supabase = getServiceClient();
+export async function geocodeMissing(supabase) {
+  const kakaoKey = requireEnv("KAKAO_REST_API_KEY");
   const { data: rows, error } = await supabase
     .from("properties")
     .select("id, address_jibun")
@@ -30,13 +30,12 @@ async function main() {
     .not("address_jibun", "is", null);
   if (error) throw error;
 
-  console.log(`좌표 없는 물건 ${rows.length}건 지오코딩 시작`);
   let ok = 0;
-  let failed = [];
+  const failed = [];
 
   for (const row of rows) {
-    let coord = await geocode(row.address_jibun);
-    if (!coord) coord = await geocode(simplify(row.address_jibun));
+    let coord = await geocode(row.address_jibun, kakaoKey);
+    if (!coord) coord = await geocode(simplify(row.address_jibun), kakaoKey);
 
     if (coord) {
       const { error: updErr } = await supabase
@@ -51,11 +50,20 @@ async function main() {
     await new Promise((r) => setTimeout(r, 120)); // be polite to Kakao's rate limit
   }
 
-  console.log(`성공 ${ok}건 / 실패 ${failed.length}건`);
+  return { total: rows.length, ok, failed };
+}
+
+async function main() {
+  const supabase = getServiceClient();
+  console.log("좌표 없는 물건 지오코딩 시작");
+  const { total, ok, failed } = await geocodeMissing(supabase);
+  console.log(`대상 ${total}건 — 성공 ${ok}건 / 실패 ${failed.length}건`);
   if (failed.length) {
     console.log("지오코딩 실패 주소 (수동 확인 필요):");
     failed.forEach((a) => console.log(" -", a));
   }
 }
 
-await main();
+if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1] ?? "")) {
+  await main();
+}

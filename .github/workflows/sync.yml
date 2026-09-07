@@ -1,0 +1,30 @@
+name: 마이옥션 관심물건 동기화
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 매일 06:00 KST
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: node scraper/sync.mjs
+        env:
+          MYAUCTION_ID: ${{ secrets.MYAUCTION_ID }}
+          MYAUCTION_PASSWORD: ${{ secrets.MYAUCTION_PASSWORD }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}

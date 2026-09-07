@@ -2,8 +2,12 @@ import "./lib/env.mjs";
 import { scrapeInterestList } from "./lib/myauction.mjs";
 import { getServiceClient } from "./lib/supabase.mjs";
 import { requireEnv } from "./lib/env.mjs";
+import { geocodeMissing } from "./geocode.mjs";
 
-const triggerType = process.argv.includes("--manual") ? "manual" : "scheduled";
+const triggerType =
+  process.argv.includes("--manual") || process.env.GITHUB_EVENT_NAME === "workflow_dispatch"
+    ? "manual"
+    : "scheduled";
 
 async function main() {
   const supabase = getServiceClient();
@@ -77,6 +81,11 @@ async function main() {
 
   const removedCount = existing.filter((r) => !scrapedCaseNos.has(r.case_no)).length;
 
+  const geo = await geocodeMissing(supabase).catch((err) => {
+    console.error("지오코딩 단계 실패 (동기화 자체는 유지):", err);
+    return { total: 0, ok: 0, failed: [] };
+  });
+
   await supabase.from("sync_logs").insert({
     run_at: startedAt.toISOString(),
     trigger_type: triggerType,
@@ -87,7 +96,7 @@ async function main() {
   });
 
   console.log(
-    `동기화 완료 — 총 ${scraped.length}건 (신규 ${newCount}, 변경 ${updatedCount}, 마이옥션에서 사라짐 ${removedCount})`
+    `동기화 완료 — 총 ${scraped.length}건 (신규 ${newCount}, 변경 ${updatedCount}, 마이옥션에서 사라짐 ${removedCount}), 지오코딩 ${geo.ok}/${geo.total}건`
   );
 }
 

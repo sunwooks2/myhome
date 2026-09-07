@@ -48,6 +48,29 @@ export type UserMeta = {
 
 export type PropertyWithMeta = Property & { user_meta: UserMeta | null };
 
+export type SyncLog = {
+  id: string;
+  run_at: string;
+  trigger_type: string;
+  status: string;
+  new_count: number;
+  updated_count: number;
+  removed_count: number;
+  error_message: string | null;
+};
+
+export async function fetchLatestSyncLog(): Promise<SyncLog | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("sync_logs")
+    .select("*")
+    .order("run_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchPropertiesWithMeta(): Promise<PropertyWithMeta[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase

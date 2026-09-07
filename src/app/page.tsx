@@ -1,11 +1,15 @@
-import { fetchPropertiesWithMeta } from "@/lib/supabase";
+import { fetchLatestSyncLog, fetchPropertiesWithMeta } from "@/lib/supabase";
 import { dDay } from "@/lib/format";
 import PropertyList from "@/components/PropertyList";
+import SyncPanel from "@/components/SyncPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const properties = await fetchPropertiesWithMeta();
+  const [properties, lastSync] = await Promise.all([
+    fetchPropertiesWithMeta(),
+    fetchLatestSyncLog(),
+  ]);
 
   const total = properties.length;
   const thisWeek = properties.filter((p) => {
@@ -19,7 +23,10 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
-      <h1 className="text-xl font-semibold">나의 관심물건</h1>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <h1 className="text-xl font-semibold">나의 관심물건</h1>
+        <SyncPanel lastSync={lastSync} />
+      </div>
       <div className="mt-4 grid grid-cols-3 gap-4 sm:max-w-lg">
         <SummaryCard label="전체 물건" value={`${total}건`} />
         <SummaryCard label="이번 주 매각" value={`${thisWeek}건`} accent={thisWeek > 0} />
