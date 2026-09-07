@@ -3,6 +3,23 @@ import { chromium } from "playwright";
 const BASE = "http://www.my-auction.co.kr";
 const PYEONG_TO_SQM = 3.305785;
 
+// CI runners occasionally see a one-off connect/TLS stall against this host
+// (saw the same thing locally once, succeeded on the very next attempt), so
+// retry navigation a few times before giving up.
+async function gotoWithRetry(page, url, attempts = 3) {
+  let lastErr;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts) await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
+  throw lastErr;
+}
+
 /**
  * Logs into my-auction.co.kr and scrapes every page of "나의 관심물건" (My interested properties).
  * Returns an array of normalized property records ready to upsert into `properties`.
@@ -12,7 +29,7 @@ export async function scrapeInterestList({ id, password }) {
   try {
     const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 
-    await page.goto(`${BASE}/member/login.php`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${BASE}/member/login.php`);
     await page.fill("#id", id);
     await page.fill("#passwd", password);
     await Promise.all([
@@ -26,7 +43,7 @@ export async function scrapeInterestList({ id, password }) {
     }
 
     // rows=100 pulls every item onto one page (the site defaults to 20/page).
-    await page.goto(`${BASE}/mypage/my_list.php?rows=100`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${BASE}/mypage/my_list.php?rows=100`);
     await page.waitForTimeout(500);
 
     const records = await page.$$eval("table.tbl_auction_list tbody tr", (rows) =>
