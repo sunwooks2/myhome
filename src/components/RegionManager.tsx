@@ -25,6 +25,22 @@ const SIDO_LIST = [
 
 type SigunguOption = { code: string; name: string };
 
+// 마이옥션 목록에는 "부천시"(도시 전체)와 "부천시 소사구"(하위 구)가 함께 내려온다.
+// 도시 전체 항목을 골라두면 그 안의 모든 구가 포함되므로, 헷갈리지 않도록
+// "(전체)"를 붙이고 목록 맨 앞으로 올려서 하위 구와 구분되게 보여준다.
+function annotateSigungu(options: SigunguOption[]): SigunguOption[] {
+  const withLabel = options.map((o) => {
+    const isWholeCity = options.some((other) => other.code !== o.code && other.name.startsWith(`${o.name} `));
+    return isWholeCity ? { ...o, name: `${o.name} (전체)` } : o;
+  });
+  return withLabel.sort((a, b) => {
+    const aWhole = a.name.endsWith("(전체)");
+    const bWhole = b.name.endsWith("(전체)");
+    if (aWhole !== bWhole) return aWhole ? -1 : 1;
+    return a.name.localeCompare(b.name, "ko");
+  });
+}
+
 export default function RegionManager({ regions }: { regions: InterestRegion[] }) {
   const router = useRouter();
   const [sido, setSido] = useState("");
@@ -42,7 +58,7 @@ export default function RegionManager({ regions }: { regions: InterestRegion[] }
       .then((res) => res.json())
       .then((data: SigunguOption[]) => {
         if (cancelled) return;
-        setSigunguOptions(data);
+        setSigunguOptions(annotateSigungu(data));
         setFetchedForSido(sido);
       })
       .catch(() => {
