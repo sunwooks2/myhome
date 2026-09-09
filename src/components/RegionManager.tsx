@@ -25,20 +25,27 @@ const SIDO_LIST = [
 
 type SigunguOption = { code: string; name: string };
 
-// 마이옥션 목록에는 "부천시"(도시 전체)와 "부천시 소사구"(하위 구)가 함께 내려온다.
-// 도시 전체 항목을 골라두면 그 안의 모든 구가 포함되므로, 헷갈리지 않도록
-// "(전체)"를 붙이고 목록 맨 앞으로 올려서 하위 구와 구분되게 보여준다.
+// 시/군/구를 아직 고르지 않은 상태를 나타내는 값. 마이옥션 검색에서는 빈
+// 문자열("") 자체가 "이 시/도 전체"를 뜻하는 유효한 선택지라서, "아직 선택
+// 안 함"과 구분하려면 별도의 값이 필요하다.
+const UNSELECTED = "__unselected__";
+
+// 마이옥션 목록에는 "부천시"(도시 전체)와 "부천시 소사구"(하위 구)가 함께
+// 내려오지만, 인천 같은 광역시는 구만 내려오고 "전체" 항목 자체가 없다.
+// 그래서 항상 "이 시/도 전체"(코드 "")를 맨 위에 추가하고, 하위 구가 딸린
+// 도시(부천시 등)는 "(전체)"를 붙여 그 아래 구들과 구분되게 보여준다.
 function annotateSigungu(options: SigunguOption[]): SigunguOption[] {
   const withLabel = options.map((o) => {
     const isWholeCity = options.some((other) => other.code !== o.code && other.name.startsWith(`${o.name} `));
     return isWholeCity ? { ...o, name: `${o.name} (전체)` } : o;
   });
-  return withLabel.sort((a, b) => {
+  const sorted = withLabel.sort((a, b) => {
     const aWhole = a.name.endsWith("(전체)");
     const bWhole = b.name.endsWith("(전체)");
     if (aWhole !== bWhole) return aWhole ? -1 : 1;
     return a.name.localeCompare(b.name, "ko");
   });
+  return [{ code: "", name: "전체" }, ...sorted];
 }
 
 export default function RegionManager({ regions }: { regions: InterestRegion[] }) {
@@ -46,7 +53,7 @@ export default function RegionManager({ regions }: { regions: InterestRegion[] }
   const [sido, setSido] = useState("");
   const [sigunguOptions, setSigunguOptions] = useState<SigunguOption[]>([]);
   const [fetchedForSido, setFetchedForSido] = useState<string | null>(null);
-  const [sigungu, setSigungu] = useState("");
+  const [sigungu, setSigungu] = useState(UNSELECTED);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadingSigungu = sido !== "" && fetchedForSido !== sido;
@@ -71,12 +78,12 @@ export default function RegionManager({ regions }: { regions: InterestRegion[] }
 
   function handleSidoChange(value: string) {
     setSido(value);
-    setSigungu("");
+    setSigungu(UNSELECTED);
     setSigunguOptions([]);
   }
 
   async function addRegion() {
-    if (!sido || !sigungu) return;
+    if (!sido || sigungu === UNSELECTED) return;
     setAdding(true);
     setError(null);
     try {
@@ -94,7 +101,7 @@ export default function RegionManager({ regions }: { regions: InterestRegion[] }
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "추가 실패");
-      setSigungu("");
+      setSigungu(UNSELECTED);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "추가 실패");
@@ -135,9 +142,9 @@ export default function RegionManager({ regions }: { regions: InterestRegion[] }
             onChange={(e) => setSigungu(e.target.value)}
             disabled={!sido || loadingSigungu}
           >
-            <option value="">{loadingSigungu ? "불러오는 중..." : "선택"}</option>
+            <option value={UNSELECTED}>{loadingSigungu ? "불러오는 중..." : "선택"}</option>
             {sigunguOptions.map((s) => (
-              <option key={s.code} value={s.code}>
+              <option key={s.code || "__all__"} value={s.code}>
                 {s.name}
               </option>
             ))}
@@ -146,7 +153,7 @@ export default function RegionManager({ regions }: { regions: InterestRegion[] }
 
         <button
           onClick={addRegion}
-          disabled={!sido || !sigungu || adding}
+          disabled={!sido || sigungu === UNSELECTED || adding}
           className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
         >
           {adding ? "추가 중..." : "관심지역 추가"}

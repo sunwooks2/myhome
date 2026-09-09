@@ -2,8 +2,10 @@ import "./lib/env.mjs";
 import { searchSafeListingsByRegion } from "./lib/myauction.mjs";
 
 const [sidoCode, sigunguCode] = process.argv.slice(2);
-if (!sidoCode || !sigunguCode) {
-  console.error("사용법: node scraper/dry-run.mjs <시도코드> <시군구코드>  (예: node scraper/dry-run.mjs 3 365)");
+if (!sidoCode || sigunguCode == null) {
+  console.error(
+    "사용법: node scraper/dry-run.mjs <시도코드> <시군구코드>  (예: node scraper/dry-run.mjs 3 365, 시/도 전체는 시군구코드에 빈 문자열 \"\")"
+  );
   process.exit(1);
 }
 

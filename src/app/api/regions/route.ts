@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const { sido_code, sido_name, sigungu_code, sigungu_name } = body ?? {};
 
-  if (!sido_code || !sido_name || !sigungu_code || !sigungu_name) {
+  if (!sido_code || !sido_name || sigungu_code == null || !sigungu_name) {
     return NextResponse.json(
       { error: "sido_code, sido_name, sigungu_code, sigungu_name이 모두 필요합니다." },
       { status: 400 }
