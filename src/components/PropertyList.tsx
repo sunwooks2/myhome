@@ -5,6 +5,14 @@ import Link from "next/link";
 import type { PropertyWithMeta } from "@/lib/supabase";
 import { dDay, formatEok, statusBadgeClass } from "@/lib/format";
 
+async function toggleFavorite(id: string, next: boolean) {
+  await fetch(`/api/properties/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ is_favorite: next }),
+  });
+}
+
 type SortKey = "sale_date" | "discount" | "appraisal_value" | "collected_at";
 
 function region(address: string | null): string {
@@ -17,11 +25,19 @@ function discountRate(p: PropertyWithMeta): number {
   return 1 - p.min_sale_price / p.appraisal_value;
 }
 
-export default function PropertyList({ properties }: { properties: PropertyWithMeta[] }) {
+export default function PropertyList({ properties: initialProperties }: { properties: PropertyWithMeta[] }) {
+  const [properties, setProperties] = useState(initialProperties);
   const [regionFilter, setRegionFilter] = useState("전체");
   const [typeFilter, setTypeFilter] = useState("전체");
   const [statusFilter, setStatusFilter] = useState("전체");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("sale_date");
+
+  function handleToggleFavorite(p: PropertyWithMeta) {
+    const next = !p.is_favorite;
+    setProperties((prev) => prev.map((row) => (row.id === p.id ? { ...row, is_favorite: next } : row)));
+    toggleFavorite(p.id, next);
+  }
 
   const regions = useMemo(
     () => ["전체", ...Array.from(new Set(properties.map((p) => region(p.address_jibun)))).sort()],
@@ -41,6 +57,7 @@ export default function PropertyList({ properties }: { properties: PropertyWithM
       .filter((p) => regionFilter === "전체" || region(p.address_jibun) === regionFilter)
       .filter((p) => typeFilter === "전체" || p.property_type === typeFilter)
       .filter((p) => statusFilter === "전체" || p.status === statusFilter)
+      .filter((p) => !favoritesOnly || p.is_favorite)
       .sort((a, b) => {
         switch (sortKey) {
           case "discount":
@@ -57,7 +74,7 @@ export default function PropertyList({ properties }: { properties: PropertyWithM
           }
         }
       });
-  }, [properties, regionFilter, typeFilter, statusFilter, sortKey]);
+  }, [properties, regionFilter, typeFilter, statusFilter, favoritesOnly, sortKey]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -77,12 +94,22 @@ export default function PropertyList({ properties }: { properties: PropertyWithM
             collected_at: "최근 수집순",
           }}
         />
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            checked={favoritesOnly}
+            onChange={(e) => setFavoritesOnly(e.target.checked)}
+            className="h-4 w-4 rounded border-neutral-300"
+          />
+          관심물건만 보기
+        </label>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+              <th className="px-4 py-3"></th>
               <th className="px-4 py-3">사건번호</th>
               <th className="px-4 py-3">소재지</th>
               <th className="px-4 py-3">종류</th>
@@ -104,6 +131,15 @@ export default function PropertyList({ properties }: { properties: PropertyWithM
                     urgent ? "bg-amber-50/70" : ""
                   }`}
                 >
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleToggleFavorite(p)}
+                      aria-label={p.is_favorite ? "관심물건 해제" : "관심물건으로 등록"}
+                      className={`text-lg ${p.is_favorite ? "text-amber-500" : "text-neutral-300 hover:text-amber-400"}`}
+                    >
+                      {p.is_favorite ? "★" : "☆"}
+                    </button>
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs text-neutral-500">
                     <Link href={p.myauction_url ?? "#"} target="_blank" className="hover:underline">
                       {p.case_no}
@@ -131,14 +167,14 @@ export default function PropertyList({ properties }: { properties: PropertyWithM
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-neutral-500">
-                    {p.user_meta?.priority_tag ?? "관심"}
+                    {p.user_meta?.priority_tag ?? "-"}
                   </td>
                 </tr>
               );
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-neutral-400">
+                <td colSpan={9} className="px-4 py-10 text-center text-neutral-400">
                   조건에 맞는 물건이 없습니다.
                 </td>
               </tr>

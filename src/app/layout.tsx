@@ -37,6 +37,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/map" className="hover:text-neutral-900">
                 지도
               </Link>
+              <Link href="/settings/regions" className="hover:text-neutral-900">
+                관심지역 설정
+              </Link>
             </nav>
           </div>
         </header>

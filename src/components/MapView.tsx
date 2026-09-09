@@ -10,6 +10,8 @@ declare global {
   }
 }
 
+type KakaoMarker = { setImage: (image: unknown) => void; setMap: (map: unknown) => void };
+
 const STATUS_COLOR: Record<string, string> = {
   진행중: "#64748b",
   유찰: "#b45309",
@@ -20,18 +22,49 @@ const STATUS_COLOR: Record<string, string> = {
   정지: "#737373",
 };
 
-function pinSvg(color: string) {
+function pinSvg(color: string, isFavorite: boolean) {
+  const ring = isFavorite
+    ? `<circle cx="13" cy="13" r="10.5" fill="none" stroke="#f59e0b" stroke-width="2.5"/>`
+    : "";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="34" viewBox="0 0 26 34">
     <path d="M13 0C5.8 0 0 5.8 0 13c0 9.3 13 21 13 21s13-11.7 13-21C26 5.8 20.2 0 13 0z" fill="${color}"/>
+    ${ring}
     <circle cx="13" cy="13" r="5" fill="white"/>
   </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-export default function MapView({ properties }: { properties: PropertyWithMeta[] }) {
+async function toggleFavorite(id: string, next: boolean) {
+  await fetch(`/api/properties/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ is_favorite: next }),
+  });
+}
+
+export default function MapView({ properties: initialProperties }: { properties: PropertyWithMeta[] }) {
   const mapDivRef = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<PropertyWithMeta | null>(null);
+  const [properties, setProperties] = useState(initialProperties);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const markersRef = useRef<Record<string, KakaoMarker>>({});
+  const selected = properties.find((p) => p.id === selectedId) ?? null;
+
+  function handleToggleFavorite(p: PropertyWithMeta) {
+    const next = !p.is_favorite;
+    setProperties((prev) => prev.map((row) => (row.id === p.id ? { ...row, is_favorite: next } : row)));
+    toggleFavorite(p.id, next);
+
+    const marker = markersRef.current[p.id];
+    if (marker) {
+      const color = STATUS_COLOR[p.status ?? ""] ?? "#64748b";
+      marker.setImage(
+        new window.kakao.maps.MarkerImage(pinSvg(color, next), new window.kakao.maps.Size(26, 34), {
+          offset: new window.kakao.maps.Point(13, 34),
+        })
+      );
+    }
+  }
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
@@ -59,7 +92,7 @@ export default function MapView({ properties }: { properties: PropertyWithMeta[]
 
   useEffect(() => {
     if (!ready || !mapDivRef.current) return;
-    const withCoords = properties.filter((p) => p.lat != null && p.lng != null);
+    const withCoords = initialProperties.filter((p) => p.lat != null && p.lng != null);
     if (withCoords.length === 0) return;
 
     const kakao = window.kakao;
@@ -71,10 +104,11 @@ export default function MapView({ properties }: { properties: PropertyWithMeta[]
       const position = new kakao.maps.LatLng(p.lat, p.lng);
       const marker = new kakao.maps.Marker({
         position,
-        image: new kakao.maps.MarkerImage(pinSvg(color), new kakao.maps.Size(26, 34), {
+        image: new kakao.maps.MarkerImage(pinSvg(color, p.is_favorite), new kakao.maps.Size(26, 34), {
           offset: new kakao.maps.Point(13, 34),
         }),
       });
+      markersRef.current[p.id] = marker;
 
       const label = new kakao.maps.CustomOverlay({
         position,
@@ -85,7 +119,7 @@ export default function MapView({ properties }: { properties: PropertyWithMeta[]
       });
       label.setMap(map);
 
-      kakao.maps.event.addListener(marker, "click", () => setSelected(p));
+      kakao.maps.event.addListener(marker, "click", () => setSelectedId(p.id));
       return marker;
     });
 
@@ -103,20 +137,33 @@ export default function MapView({ properties }: { properties: PropertyWithMeta[]
     return () => {
       clusterer.clear();
       markers.forEach((m: any) => m.setMap(null));
+      markersRef.current = {};
     };
-  }, [ready, properties]);
+  }, [ready, initialProperties]);
 
   return (
     <div className="relative isolate h-[calc(100vh-65px)] w-full">
       <div ref={mapDivRef} className="h-full w-full" />
       {selected && (
-        <DetailSidebar property={selected} onClose={() => setSelected(null)} />
+        <DetailSidebar
+          property={selected}
+          onClose={() => setSelectedId(null)}
+          onToggleFavorite={() => handleToggleFavorite(selected)}
+        />
       )}
     </div>
   );
 }
 
-function DetailSidebar({ property, onClose }: { property: PropertyWithMeta; onClose: () => void }) {
+function DetailSidebar({
+  property,
+  onClose,
+  onToggleFavorite,
+}: {
+  property: PropertyWithMeta;
+  onClose: () => void;
+  onToggleFavorite: () => void;
+}) {
   const dday = dDay(property.sale_date);
   const deposit = property.min_sale_price ? Math.round(property.min_sale_price * 0.1) : null;
 
@@ -127,9 +174,18 @@ function DetailSidebar({ property, onClose }: { property: PropertyWithMeta; onCl
           <div className="font-mono text-xs text-neutral-500">{property.case_no}</div>
           <div className="text-sm text-neutral-400">{property.court}</div>
         </div>
-        <button onClick={onClose} className="text-neutral-400 hover:text-neutral-700" aria-label="닫기">
-          ✕
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggleFavorite}
+            aria-label={property.is_favorite ? "관심물건 해제" : "관심물건으로 등록"}
+            className={`text-xl ${property.is_favorite ? "text-amber-500" : "text-neutral-300 hover:text-amber-400"}`}
+          >
+            {property.is_favorite ? "★" : "☆"}
+          </button>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-700" aria-label="닫기">
+            ✕
+          </button>
+        </div>
       </div>
 
       <span className={`mt-3 inline-block rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(property.status)}`}>

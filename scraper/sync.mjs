@@ -1,5 +1,5 @@
 import "./lib/env.mjs";
-import { scrapeInterestList } from "./lib/myauction.mjs";
+import { searchSafeListingsByRegion } from "./lib/myauction.mjs";
 import { getServiceClient } from "./lib/supabase.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { geocodeMissing } from "./geocode.mjs";
@@ -13,12 +13,45 @@ async function main() {
   const supabase = getServiceClient();
   const startedAt = new Date();
 
-  let scraped;
-  try {
-    scraped = await scrapeInterestList({
-      id: requireEnv("MYAUCTION_ID"),
-      password: requireEnv("MYAUCTION_PASSWORD"),
+  const { data: regions, error: regionsErr } = await supabase
+    .from("interest_regions")
+    .select("sido_code, sido_name, sigungu_code, sigungu_name");
+  if (regionsErr) throw regionsErr;
+
+  if (!regions.length) {
+    console.log("등록된 관심지역이 없습니다. 설정 화면에서 지역을 먼저 추가하세요.");
+    await supabase.from("sync_logs").insert({
+      run_at: startedAt.toISOString(),
+      trigger_type: triggerType,
+      status: "성공",
+      new_count: 0,
+      updated_count: 0,
+      removed_count: 0,
     });
+    return;
+  }
+
+  const credentials = {
+    id: requireEnv("MYAUCTION_ID"),
+    password: requireEnv("MYAUCTION_PASSWORD"),
+  };
+
+  let scraped = [];
+  let totalExcluded = 0;
+  try {
+    for (const region of regions) {
+      console.log(`[${region.sido_name} ${region.sigungu_name}] 검색 중...`);
+      const { records, excludedByKeywordCheck } = await searchSafeListingsByRegion({
+        ...credentials,
+        sidoCode: region.sido_code,
+        sigunguCode: region.sigungu_code,
+      });
+      console.log(
+        `[${region.sido_name} ${region.sigungu_name}] 안전 물건 ${records.length}건 (2차 확인에서 추가 제외 ${excludedByKeywordCheck}건)`
+      );
+      scraped.push(...records);
+      totalExcluded += excludedByKeywordCheck;
+    }
   } catch (err) {
     await supabase.from("sync_logs").insert({
       run_at: startedAt.toISOString(),
@@ -30,6 +63,10 @@ async function main() {
     process.exitCode = 1;
     return;
   }
+
+  // 같은 물건이 여러 지역 검색에 겹쳐 나올 수 있으므로 사건번호로 중복 제거.
+  const uniqueByCaseNo = new Map(scraped.map((r) => [r.case_no, r]));
+  scraped = Array.from(uniqueByCaseNo.values());
 
   const { data: existing, error: fetchErr } = await supabase
     .from("properties")
@@ -57,23 +94,16 @@ async function main() {
       building_area: rec.building_area,
       land_area: rec.land_area,
       myauction_url: rec.myauction_url,
-      site_tags: rec.regulation_tags_raw,
       updated_at: new Date().toISOString(),
     };
 
-    const { data: upserted, error: upsertErr } = await supabase
+    const { error: upsertErr } = await supabase
       .from("properties")
-      .upsert(payload, { onConflict: "case_no" })
-      .select("id")
-      .single();
+      .upsert(payload, { onConflict: "case_no" });
     if (upsertErr) throw upsertErr;
 
     if (!prev) {
       newCount++;
-      await supabase.from("user_meta").upsert(
-        { property_id: upserted.id, priority_tag: "관심" },
-        { onConflict: "property_id" }
-      );
     } else if (prev.status !== rec.status || prev.min_sale_price !== rec.min_sale_price) {
       updatedCount++;
     }
@@ -96,7 +126,7 @@ async function main() {
   });
 
   console.log(
-    `동기화 완료 — 총 ${scraped.length}건 (신규 ${newCount}, 변경 ${updatedCount}, 마이옥션에서 사라짐 ${removedCount}), 지오코딩 ${geo.ok}/${geo.total}건`
+    `동기화 완료 — 지역 ${regions.length}곳, 안전 물건 총 ${scraped.length}건 (신규 ${newCount}, 변경 ${updatedCount}, 더 이상 안 보임 ${removedCount}, 위험요소로 제외 ${totalExcluded}건), 지오코딩 ${geo.ok}/${geo.total}건`
   );
 }
 

@@ -15,6 +15,7 @@ export function getSupabase() {
 export type Property = {
   id: string;
   case_no: string;
+  is_favorite: boolean;
   court: string | null;
   address_road: string | null;
   address_jibun: string | null;
@@ -58,6 +59,25 @@ export type SyncLog = {
   removed_count: number;
   error_message: string | null;
 };
+
+export type InterestRegion = {
+  id: string;
+  sido_code: string;
+  sido_name: string;
+  sigungu_code: string;
+  sigungu_name: string;
+  created_at: string;
+};
+
+export async function fetchInterestRegions(): Promise<InterestRegion[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("interest_regions")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
 
 export async function fetchLatestSyncLog(): Promise<SyncLog | null> {
   const supabase = getSupabase();

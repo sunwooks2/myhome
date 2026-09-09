@@ -12,6 +12,7 @@ export default async function HomePage() {
   ]);
 
   const total = properties.length;
+  const favoriteCount = properties.filter((p) => p.is_favorite).length;
   const thisWeek = properties.filter((p) => {
     const { days } = dDay(p.sale_date);
     return days != null && days >= 0 && days <= 7;
@@ -24,11 +25,12 @@ export default async function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <h1 className="text-xl font-semibold">나의 관심물건</h1>
+        <h1 className="text-xl font-semibold">관심지역 안전물건</h1>
         <SyncPanel lastSync={lastSync} />
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-4 sm:max-w-lg">
-        <SummaryCard label="전체 물건" value={`${total}건`} />
+      <div className="mt-4 grid grid-cols-4 gap-4 sm:max-w-2xl">
+        <SummaryCard label="전체 후보물건" value={`${total}건`} />
+        <SummaryCard label="관심물건" value={`${favoriteCount}건`} />
         <SummaryCard label="이번 주 매각" value={`${thisWeek}건`} accent={thisWeek > 0} />
         <SummaryCard label="24시간 내 신규" value={`${newest}건`} />
       </div>
