@@ -3,11 +3,18 @@ import { chromium } from "playwright";
 const BASE = "http://www.my-auction.co.kr";
 const PYEONG_TO_SQM = 3.305785;
 const ROWS_PER_PAGE = 100;
-const MAX_PAGES = 20; // safety cap per region (up to 2,000 listings before risk filtering)
+const MAX_PAGES = 40; // safety cap per region/category (up to 4,000 listings) — 전체 광역시 검색도 잘리지 않도록 여유를 둠
 
 // 초보자 안전 필터 — 사용자와 합의한 "표준 리스크 세트". 마이옥션 검색 폼의
-// 특수물건 체크박스 값과 그대로 매칭되며, speand2=snot(체크항목제외검색)과 함께
-// 보내면 마이옥션이 서버 단에서 이 조건에 해당하는 물건을 결과에서 제외해 준다.
+// 특수물건 체크박스 값과 그대로 매칭된다.
+//
+// 원래는 이 값들을 전부 spe_age에 실어 speand2=snot(체크항목제외검색)으로
+// 한 번에 요청하면 서버가 알아서 빼줄 거라 생각했는데, 실측해보니 "유치권/
+// 법정지상권/분묘기지권/대지권미등기"를 제외검색에 넣으면 (단독으로 넣어도)
+// 전체 결과가 거의 0건으로 무너지는 사이트 쪽 버그가 있었다 (인천 전체 기준
+// 2,438건 중 이 넷 중 하나만 제외해도 3건으로 붕괴, 반면 대항력/지분 등은
+// 정상 동작). 그래서 제외검색에 기대지 않고, 카테고리별로 "포함검색"
+// (speand1=AND)을 따로 돌려 사건번호를 모은 뒤 우리가 직접 차집합을 낸다.
 const STANDARD_RISK_SPE = [
   "유치권",
   "법정지상권",
@@ -71,7 +78,10 @@ function fmtDate(d) {
 // 실제 브라우저가 검색 폼 제출 시 만들어내는 쿼리스트링을 그대로 재현한다.
 // 필드를 임의로 빼면 사이트의 프론트 검증 스크립트가 "error2" 얼럿을 띄우고
 // 검색을 막기 때문에, 값이 비어 있는 항목도 전부 명시적으로 채워 보낸다.
-function buildSearchUrl({ sidoCode, sigunguCode, page }) {
+//
+// riskCategory를 주면 그 항목 하나만 "포함검색"(체크항목AND검색)한다 —
+// 위 주석에서 설명한 제외검색 버그를 피하기 위해 항상 포함검색만 쓴다.
+function buildSearchUrl({ sidoCode, sigunguCode, page, riskCategory }) {
   const today = new Date();
   const in3Months = new Date(today);
   in3Months.setMonth(in3Months.getMonth() + 3);
@@ -116,9 +126,9 @@ function buildSearchUrl({ sidoCode, sigunguCode, page }) {
     barea2: "",
     larea1: "",
     larea2: "",
-    speand1: "",
-    speand2: "snot",
-    spe_age: STANDARD_RISK_SPE.join(","),
+    speand1: riskCategory ? "sand" : "",
+    speand2: "",
+    spe_age: riskCategory ?? "",
     gm_age: "",
     np1: "",
     np2: "",
@@ -175,53 +185,75 @@ async function scrapeListPage(page) {
   );
 }
 
+// 페이지를 넘겨가며 목록을 전부 긁는다. urlForPage(n)이 만든 주소로 이동해
+// 행이 0건이거나(끝) 한 페이지 분량(ROWS_PER_PAGE)보다 적게 나오면 멈춘다.
+// dialogState는 호출자가 페이지에 등록해 둔 dialog 리스너와 공유하는 참조칸이다.
+async function scrapeAllPages(page, urlForPage, dialogState) {
+  const collected = [];
+
+  for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
+    dialogState.message = null;
+    await gotoWithRetry(page, urlForPage(pageNum), 3, { referer: `${BASE}/auction/search.php` });
+    await page.waitForTimeout(400);
+
+    const rows = await scrapeListPage(page);
+    if (rows.length === 0) {
+      if (dialogState.message) {
+        throw new Error(`마이옥션 검색 요청이 거부됨: ${dialogState.message}`);
+      }
+      break;
+    }
+    collected.push(...rows);
+    if (rows.length < ROWS_PER_PAGE) break;
+  }
+  return collected;
+}
+
 /**
  * 등록된 관심지역(시/도 + 시/군/구) 기준으로 마이옥션 종합검색을 수행하고,
- * 대항력임차인·유치권 등 표준 리스크 세트에 해당하는 물건은 검색 조건
- * 자체에서 제외한 뒤, 남은 목록에서 위험 키워드가 섞여 있지 않은지 한 번 더
- * 확인해 안전한 물건만 반환한다. 로그인 세션이 있어야 검색 결과 열람이 가능하다.
+ * 대항력임차인·유치권 등 표준 리스크 세트에 해당하는 물건을 제외한 안전한
+ * 물건만 반환한다. 로그인 세션이 있어야 검색 결과 열람이 가능하다.
+ *
+ * 위험 물건 판정은 (a) 리스크 카테고리별 "포함검색" 결과의 사건번호 합집합과
+ * (b) 목록에 이미 표시되는 "특수권리" 텍스트에 위험 키워드가 있는지, 둘을
+ * 함께 본다. (제외검색을 한 번에 쓰지 않는 이유는 위 STANDARD_RISK_SPE
+ * 주석 참고.)
  */
 export async function searchSafeListingsByRegion({ id, password, sidoCode, sigunguCode }) {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-    let lastDialogMessage = null;
+    const dialogState = { message: null };
     page.on("dialog", async (dialog) => {
-      lastDialogMessage = dialog.message();
+      dialogState.message = dialog.message();
       await dialog.dismiss().catch(() => {});
     });
     await login(page, { id, password });
 
-    const collected = [];
-    let excludedByKeywordCheck = 0;
+    const baseline = await scrapeAllPages(
+      page,
+      (pageNum) => buildSearchUrl({ sidoCode, sigunguCode, page: pageNum }),
+      dialogState
+    );
 
-    for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
-      lastDialogMessage = null;
-      await gotoWithRetry(page, buildSearchUrl({ sidoCode, sigunguCode, page: pageNum }), 3, {
-        referer: `${BASE}/auction/search.php`,
-      });
-      await page.waitForTimeout(400);
-
-      const rows = await scrapeListPage(page);
-      if (rows.length === 0) {
-        if (lastDialogMessage) {
-          throw new Error(`마이옥션 검색 요청이 거부됨: ${lastDialogMessage}`);
-        }
-        break;
-      }
-
-      for (const r of rows) {
-        if (RISK_KEYWORDS.some((k) => r.risk_text.includes(k))) {
-          excludedByKeywordCheck++;
-          continue;
-        }
-        collected.push(r);
-      }
-
-      if (rows.length < ROWS_PER_PAGE) break;
+    const riskyCaseNos = new Set();
+    for (const category of STANDARD_RISK_SPE) {
+      const rows = await scrapeAllPages(
+        page,
+        (pageNum) => buildSearchUrl({ sidoCode, sigunguCode, page: pageNum, riskCategory: category }),
+        dialogState
+      );
+      for (const r of rows) riskyCaseNos.add(r.case_no);
     }
 
-    return { records: collected.map(normalize), excludedByKeywordCheck };
+    const safe = baseline.filter(
+      (r) => !riskyCaseNos.has(r.case_no) && !RISK_KEYWORDS.some((k) => r.risk_text.includes(k))
+    );
+
+    return {
+      records: safe.map(normalize),
+      excludedByKeywordCheck: baseline.length - safe.length,
+    };
   } finally {
     await browser.close();
   }
