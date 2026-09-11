@@ -200,6 +200,12 @@ function DetailSidebar({
         <dd className="text-right font-medium">{formatWon(property.appraisal_value)}</dd>
         <dt className="text-neutral-500">최저매각가격</dt>
         <dd className="text-right font-medium text-amber-700">{formatWon(property.min_sale_price)}</dd>
+        {property.status === "매각" && property.winning_bid && (
+          <>
+            <dt className="text-neutral-500">낙찰가</dt>
+            <dd className="text-right font-medium text-emerald-700">{formatWon(property.winning_bid)}</dd>
+          </>
+        )}
         <dt className="text-neutral-500">매수신청보증금(10%)</dt>
         <dd className="text-right">{formatWon(deposit)}</dd>
         <dt className="text-neutral-500">유찰횟수</dt>

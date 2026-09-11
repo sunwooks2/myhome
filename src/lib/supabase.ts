@@ -24,6 +24,7 @@ export type Property = {
   property_type: string | null;
   appraisal_value: number | null;
   min_sale_price: number | null;
+  winning_bid: number | null;
   failed_count: number;
   sale_date: string | null;
   status: string | null;

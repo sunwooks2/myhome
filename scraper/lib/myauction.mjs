@@ -158,9 +158,12 @@ async function scrapeListPage(page) {
         const areaText = addrCell?.querySelector("ul > li:nth-child(2) p")?.textContent || "";
         const riskText = addrCell?.querySelector(".refer")?.textContent.trim() || "";
 
+        const priceCell = tds[4];
         const priceLines = get(4).split("\n").map((s) => s.trim()).filter(Boolean);
         const appraisal_value = priceLines[0] || null;
         const min_sale_price = priceLines[1] || null;
+        // 매각(낙찰)된 사건만 감정가/최저가 아래에 낙찰가가 분홍색(span.pink)으로 따로 표시된다.
+        const winning_bid = priceCell?.querySelector("span.pink")?.textContent.trim() || null;
 
         const statusLines = get(5).split("\n").map((s) => s.trim()).filter(Boolean);
         const status_raw = statusLines.join(" ");
@@ -178,6 +181,7 @@ async function scrapeListPage(page) {
           risk_text: riskText,
           appraisal_value_raw: appraisal_value,
           min_sale_price_raw: min_sale_price,
+          winning_bid_raw: winning_bid,
           status_raw,
           sale_date_raw: sale_date,
         };
@@ -308,6 +312,7 @@ function normalize(r) {
     property_type: r.property_type || null,
     appraisal_value: toNumber(r.appraisal_value_raw),
     min_sale_price: toNumber(r.min_sale_price_raw),
+    winning_bid: toNumber(r.winning_bid_raw),
     failed_count,
     sale_date: parseSaleDate(r.sale_date_raw),
     status,

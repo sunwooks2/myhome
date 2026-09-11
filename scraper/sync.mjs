@@ -88,6 +88,7 @@ async function main() {
       property_type: rec.property_type,
       appraisal_value: rec.appraisal_value,
       min_sale_price: rec.min_sale_price,
+      winning_bid: rec.winning_bid,
       failed_count: rec.failed_count,
       sale_date: rec.sale_date,
       status: rec.status,
