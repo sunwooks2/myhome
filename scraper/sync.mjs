@@ -1,5 +1,5 @@
 import "./lib/env.mjs";
-import { searchSafeListingsByRegion } from "./lib/myauction.mjs";
+import { searchSafeListingsByRegion, fetchRecentlySoldByRegion } from "./lib/myauction.mjs";
 import { getServiceClient } from "./lib/supabase.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { geocodeMissing } from "./geocode.mjs";
@@ -112,6 +112,36 @@ async function main() {
 
   const removedCount = existing.filter((r) => !scrapedCaseNos.has(r.case_no)).length;
 
+  // 매각 완료 사건은 팔린 다음날부터 위 검색 창(오늘~3개월)에서 벗어나므로,
+  // 이미 추적 중인 사건 한정으로 과거 매각 이력을 따로 조회해 낙찰가를 채운다.
+  let soldUpdated = 0;
+  try {
+    console.log("최근 매각 완료 물건 낙찰가 확인 중...");
+    for (const region of regions) {
+      const sold = await fetchRecentlySoldByRegion({
+        ...credentials,
+        sidoCode: region.sido_code,
+        sigunguCode: region.sigungu_code,
+      });
+      for (const rec of sold) {
+        if (!existingByCase.has(rec.case_no) || !rec.winning_bid) continue;
+        const { error: updErr } = await supabase
+          .from("properties")
+          .update({
+            status: rec.status,
+            min_sale_price: rec.min_sale_price,
+            winning_bid: rec.winning_bid,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("case_no", rec.case_no);
+        if (updErr) throw updErr;
+        soldUpdated++;
+      }
+    }
+  } catch (err) {
+    console.error("낙찰가 갱신 단계 실패 (동기화 자체는 유지):", err);
+  }
+
   const geo = await geocodeMissing(supabase).catch((err) => {
     console.error("지오코딩 단계 실패 (동기화 자체는 유지):", err);
     return { total: 0, ok: 0, failed: [] };
@@ -127,7 +157,7 @@ async function main() {
   });
 
   console.log(
-    `동기화 완료 — 지역 ${regions.length}곳, 안전 물건 총 ${scraped.length}건 (신규 ${newCount}, 변경 ${updatedCount}, 더 이상 안 보임 ${removedCount}, 위험요소로 제외 ${totalExcluded}건), 지오코딩 ${geo.ok}/${geo.total}건`
+    `동기화 완료 — 지역 ${regions.length}곳, 안전 물건 총 ${scraped.length}건 (신규 ${newCount}, 변경 ${updatedCount}, 더 이상 안 보임 ${removedCount}, 위험요소로 제외 ${totalExcluded}건), 낙찰가 갱신 ${soldUpdated}건, 지오코딩 ${geo.ok}/${geo.total}건`
   );
 }
 

@@ -81,7 +81,11 @@ function fmtDate(d) {
 //
 // riskCategory를 주면 그 항목 하나만 "포함검색"(체크항목AND검색)한다 —
 // 위 주석에서 설명한 제외검색 버그를 피하기 위해 항상 포함검색만 쓴다.
-function buildSearchUrl({ sidoCode, sigunguCode, page, riskCategory }) {
+//
+// aresult/ipdate1을 주면 기본값(오늘~3개월 뒤, 전체 상태) 대신 그 값을 쓴다.
+// 매각 완료 물건은 팔린 다음날부터 이 기본 창(항상 "오늘" 이후)에서 벗어나기
+// 때문에, 낙찰가 갱신용 조회에서는 ipdate1을 과거로 넓혀 aresult=매각으로 찾는다.
+function buildSearchUrl({ sidoCode, sigunguCode, page, riskCategory, aresult, ipdate1 }) {
   const today = new Date();
   const in3Months = new Date(today);
   in3Months.setMonth(in3Months.getMonth() + 3);
@@ -89,7 +93,7 @@ function buildSearchUrl({ sidoCode, sigunguCode, page, riskCategory }) {
   const params = new URLSearchParams({
     page: String(page),
     stc: "1",
-    aresult: "",
+    aresult: aresult ?? "",
     charge_no: "",
     usage_code_all: "",
     acourt: "",
@@ -101,7 +105,7 @@ function buildSearchUrl({ sidoCode, sigunguCode, page, riskCategory }) {
     schs: "N",
     pchs: "N",
     listds: "",
-    ipdate1: fmtDate(today),
+    ipdate1: ipdate1 ? fmtDate(ipdate1) : fmtDate(today),
     ipdate2: fmtDate(in3Months),
     eprice1: "0",
     eprice2: "0",
@@ -258,6 +262,39 @@ export async function searchSafeListingsByRegion({ id, password, sidoCode, sigun
       records: safe.map(normalize),
       excludedByKeywordCheck: baseline.length - safe.length,
     };
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * 최근 매각(낙찰) 완료된 물건을 조회해 낙찰가를 포함한 최신 정보를 반환한다.
+ * 매각된 사건은 팔린 다음날부터 "오늘~3개월" 기본 검색 창(searchSafeListingsByRegion이
+ * 쓰는)에서 벗어나기 때문에, 별도로 ipdate1을 과거로 넓히고 aresult=매각으로
+ * 조회해야 한다. sinceDaysAgo만큼 과거부터 오늘까지의 매각 건을 모두 가져온다.
+ */
+export async function fetchRecentlySoldByRegion({ id, password, sidoCode, sigunguCode, sinceDaysAgo = 60 }) {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    const dialogState = { message: null };
+    page.on("dialog", async (dialog) => {
+      dialogState.message = dialog.message();
+      await dialog.dismiss().catch(() => {});
+    });
+    await login(page, { id, password });
+
+    const since = new Date();
+    since.setDate(since.getDate() - sinceDaysAgo);
+
+    const rows = await scrapeAllPages(
+      page,
+      (pageNum) =>
+        buildSearchUrl({ sidoCode, sigunguCode, page: pageNum, aresult: "매각", ipdate1: since }),
+      dialogState
+    );
+
+    return rows.map(normalize);
   } finally {
     await browser.close();
   }
