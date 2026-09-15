@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { InterestRegion } from "@/lib/supabase";
+import sigunguBySido from "@/data/sigungu.json";
 
 const SIDO_LIST = [
   { code: "10", name: "서울특별시" },
@@ -51,35 +52,21 @@ function annotateSigungu(options: SigunguOption[]): SigunguOption[] {
 export default function RegionManager({ regions }: { regions: InterestRegion[] }) {
   const router = useRouter();
   const [sido, setSido] = useState("");
-  const [sigunguOptions, setSigunguOptions] = useState<SigunguOption[]>([]);
-  const [fetchedForSido, setFetchedForSido] = useState<string | null>(null);
   const [sigungu, setSigungu] = useState(UNSELECTED);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const loadingSigungu = sido !== "" && fetchedForSido !== sido;
 
-  useEffect(() => {
-    if (!sido) return;
-    let cancelled = false;
-    fetch(`/api/regions/sigungu?sido=${sido}`)
-      .then((res) => res.json())
-      .then((data: SigunguOption[]) => {
-        if (cancelled) return;
-        setSigunguOptions(annotateSigungu(data));
-        setFetchedForSido(sido);
-      })
-      .catch(() => {
-        if (!cancelled) setError("시/군/구 목록을 불러오지 못했습니다.");
-      });
-    return () => {
-      cancelled = true;
-    };
+  // 시/군/구 목록은 마이옥션에서 매번 실시간으로 받아오지 않고, 미리 저장해 둔
+  // 정적 데이터를 쓴다 — 배포 환경(Vercel)에서는 마이옥션이 클라우드 IP 접속
+  // 자체를 막아 라이브 조회가 항상 타임아웃으로 실패했기 때문.
+  const sigunguOptions = useMemo(() => {
+    const raw = (sigunguBySido as Record<string, SigunguOption[]>)[sido] ?? [];
+    return annotateSigungu(raw);
   }, [sido]);
 
   function handleSidoChange(value: string) {
     setSido(value);
     setSigungu(UNSELECTED);
-    setSigunguOptions([]);
   }
 
   async function addRegion() {
@@ -140,9 +127,9 @@ export default function RegionManager({ regions }: { regions: InterestRegion[] }
             className="min-w-[140px] rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm text-neutral-900 disabled:bg-neutral-100"
             value={sigungu}
             onChange={(e) => setSigungu(e.target.value)}
-            disabled={!sido || loadingSigungu}
+            disabled={!sido}
           >
-            <option value={UNSELECTED}>{loadingSigungu ? "불러오는 중..." : "선택"}</option>
+            <option value={UNSELECTED}>선택</option>
             {sigunguOptions.map((s) => (
               <option key={s.code || "__all__"} value={s.code}>
                 {s.name}
