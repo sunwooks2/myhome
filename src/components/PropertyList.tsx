@@ -41,6 +41,7 @@ export default function PropertyList({ properties: initialProperties }: { proper
   const [typeFilters, setTypeFilters] = useState<string[]>([]);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [biddableOnly, setBiddableOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("sale_date");
 
   function handleToggleFavorite(p: PropertyWithMeta) {
@@ -68,6 +69,7 @@ export default function PropertyList({ properties: initialProperties }: { proper
       .filter((p) => typeFilters.length === 0 || (p.property_type != null && typeFilters.includes(p.property_type)))
       .filter((p) => statusFilters.length === 0 || (p.status != null && statusFilters.includes(p.status)))
       .filter((p) => !favoritesOnly || p.is_favorite)
+      .filter((p) => !biddableOnly || p.status == null || !UNBIDDABLE_STATUSES.has(p.status))
       .sort((a, b) => {
         switch (sortKey) {
           case "discount":
@@ -90,7 +92,7 @@ export default function PropertyList({ properties: initialProperties }: { proper
           }
         }
       });
-  }, [properties, regionFilters, typeFilters, statusFilters, favoritesOnly, sortKey]);
+  }, [properties, regionFilters, typeFilters, statusFilters, favoritesOnly, biddableOnly, sortKey]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -129,6 +131,15 @@ export default function PropertyList({ properties: initialProperties }: { proper
             className="h-4 w-4 rounded border-neutral-300"
           />
           관심물건만 보기
+        </label>
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            checked={biddableOnly}
+            onChange={(e) => setBiddableOnly(e.target.checked)}
+            className="h-4 w-4 rounded border-neutral-300"
+          />
+          입찰가능건만 보기
         </label>
       </div>
 
