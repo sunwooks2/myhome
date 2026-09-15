@@ -152,12 +152,14 @@ export default function PropertyList({ properties: initialProperties }: { proper
               const dday = dDay(p.sale_date);
               const urgent = dday.days != null && dday.days >= 0 && dday.days <= 7;
               const unbiddable = p.status != null && UNBIDDABLE_STATUSES.has(p.status);
-              const strike = unbiddable ? "line-through decoration-neutral-400" : "";
+              const strike = unbiddable
+                ? "line-through decoration-2 decoration-red-400 text-neutral-400"
+                : "";
               return (
                 <tr
                   key={p.id}
                   className={`border-b border-neutral-100 last:border-0 hover:bg-neutral-50 ${
-                    urgent ? "bg-amber-50/70" : ""
+                    unbiddable ? "bg-neutral-100/70" : urgent ? "bg-amber-50/70" : ""
                   }`}
                 >
                   <td className="px-4 py-3">
@@ -169,7 +171,7 @@ export default function PropertyList({ properties: initialProperties }: { proper
                       {p.is_favorite ? "★" : "☆"}
                     </button>
                   </td>
-                  <td className={`px-4 py-3 font-mono text-xs text-neutral-500 ${strike}`}>
+                  <td className={`px-4 py-3 font-mono text-xs ${unbiddable ? strike : "text-neutral-500"}`}>
                     <Link href={p.myauction_url ?? "#"} target="_blank" className="hover:underline">
                       {p.case_no}
                     </Link>
@@ -180,7 +182,11 @@ export default function PropertyList({ properties: initialProperties }: { proper
                   <td className={`px-4 py-3 text-right whitespace-nowrap ${strike}`}>
                     {formatEok(p.appraisal_value)}
                   </td>
-                  <td className={`px-4 py-3 text-right whitespace-nowrap font-medium text-amber-700 ${strike}`}>
+                  <td
+                    className={`px-4 py-3 text-right whitespace-nowrap font-medium ${
+                      unbiddable ? strike : "text-amber-700"
+                    }`}
+                  >
                     {formatEok(p.min_sale_price)}
                     {p.status === "매각" && p.winning_bid ? (
                       <div className="text-xs font-normal text-emerald-700">낙찰 {formatEok(p.winning_bid)}</div>
@@ -201,7 +207,7 @@ export default function PropertyList({ properties: initialProperties }: { proper
                       {dday.label}
                     </div>
                   </td>
-                  <td className={`px-4 py-3 whitespace-nowrap text-neutral-500 ${strike}`}>
+                  <td className={`px-4 py-3 whitespace-nowrap ${unbiddable ? strike : "text-neutral-500"}`}>
                     {p.user_meta?.priority_tag ?? "-"}
                   </td>
                 </tr>
