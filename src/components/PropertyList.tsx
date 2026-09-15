@@ -153,7 +153,7 @@ export default function PropertyList({ properties: initialProperties }: { proper
               const urgent = dday.days != null && dday.days >= 0 && dday.days <= 7;
               const unbiddable = p.status != null && UNBIDDABLE_STATUSES.has(p.status);
               const strike = unbiddable
-                ? "line-through decoration-2 decoration-red-400 text-neutral-400"
+                ? "line-through decoration-2 decoration-neutral-700 text-neutral-400"
                 : "";
               return (
                 <tr
