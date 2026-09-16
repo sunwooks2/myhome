@@ -27,9 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-neutral-50 text-neutral-900">
         <header className="border-b border-neutral-200 bg-white">
           <div className="mx-auto flex max-w-6xl items-center gap-8 px-6 py-4">
-            <span className="text-lg font-semibold tracking-tight">
-              마이홈 <span className="text-amber-700">경매</span>
-            </span>
+            <span className="text-lg font-semibold tracking-tight">마이홈</span>
             <nav className="flex gap-6 text-sm font-medium text-neutral-600">
               <Link href="/" className="hover:text-neutral-900">
                 목록
