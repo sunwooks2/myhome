@@ -199,17 +199,14 @@ export default function PropertyList({ properties: initialProperties }: { proper
                     }`}
                   >
                     {formatEok(p.min_sale_price)}
-                    {p.status === "매각" && p.winning_bid ? (
+                    {p.status === "매각" && p.winning_bid && (
                       <div className="text-xs font-normal text-emerald-700">낙찰 {formatEok(p.winning_bid)}</div>
-                    ) : (
-                      p.failed_count > 0 && (
-                        <div className="text-xs font-normal text-neutral-400">유찰 {p.failed_count}회</div>
-                      )
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(p.status)}`}>
                       {p.status}
+                      {p.failed_count > 0 && ` ${p.failed_count}회`}
                     </span>
                   </td>
                   <td className={`px-4 py-3 whitespace-nowrap ${strike}`}>
